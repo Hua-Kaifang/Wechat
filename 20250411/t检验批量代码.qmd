@@ -1,0 +1,70 @@
+---
+title: "t检验批量代码"
+editor_options: 
+  chunk_output_type: console
+---
+
+## 0.写在前面
+
+## 1.导入数据
+
+```{r}
+## 1.导入数据
+library(readr)
+demo_data <- read_csv("data.csv")
+
+#加载R包
+library(knitr)
+#打印数据
+kable(head(demo_data,5),caption = "示例数据结构",align = "c")
+```
+
+解读一下数据表头的含义
+
+```         
+n_test | mean_test | sd_test | n_control | mean_control | sd_control |
+```
+
+n_test、 mean_test和 sd_test分别代表实验组的样本量、标准差和均值；同理，n_control、mean_control 和sd_control分别代表对照组的样本量、标准差和均值。
+
+## 2.写入函数并计算
+
+```{r}
+## 2.设计函数
+# 优化后的 t 检验函数：使用 t.test() 而非手动计算
+calculate_t_test <- function(data) {
+  results <- apply(data, 1, function(row) {
+    # 读取输入参数
+    n1 <- as.numeric(row['n_test'])
+    m1 <- as.numeric(row['mean_test'])
+    sd1 <- as.numeric(row['sd_test'])
+    
+    n2 <- as.numeric(row['n_control'])
+    m2 <- as.numeric(row['mean_control'])
+    sd2 <- as.numeric(row['sd_control'])
+    
+    # 模拟数据（正态分布）
+    test <- rnorm(n1, mean = m1, sd = sd1)
+    control <- rnorm(n2, mean = m2, sd = sd2)
+    
+    # 执行t检验（默认方差齐性）
+    t_res <- t.test(test, control, var.equal = TRUE)
+    
+    # 返回 t 值和 p 值
+    return(c(t_value = t_res$statistic, p_value = t_res$p.value))
+  })
+  
+  # 整理结果为数据框
+  results_df <- as.data.frame(t(results))
+  data$t_value <- results_df$t_value
+  data$p_value <- results_df$p_value
+  
+  return(data)
+}
+
+## 3.开始计算
+result <- calculate_t_test(demo_data)
+
+# 输出结果
+kable(head(result,5),caption = "t检验计算结果",align = "c")
+```
